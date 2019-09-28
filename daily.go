@@ -11,6 +11,7 @@ import (
 )
 
 type Entry struct {
+	ID    string                 `json:"id"`
 	Date  time.Time              `json:"date"`
 	Type  string                 `json:"type"`
 	Note  string                 `json:"note,omitempty"`
@@ -52,7 +53,7 @@ func saveEntry(w http.ResponseWriter, req *http.Request) {
 	if val, ok := req.PostForm["value"]; ok && len(val) >= 1 {
 		v, err := strconv.ParseFloat(val[0], 64)
 		if err != nil {
-			fmt.Fprintln(w, "value %q of 'value' is not a number: %s", val[0], err)
+			fmt.Fprintf(w, "value %q of 'value' is not a number: %s\n", val[0], err)
 			return
 		}
 		entry.Value = v
