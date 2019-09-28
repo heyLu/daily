@@ -92,8 +92,19 @@ func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	date := time.Now().UTC().Round(time.Millisecond)
+	if len(req.PostForm.Get("date")) > 0 {
+		date, err = time.Parse(time.RFC3339, req.PostForm.Get("date"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("value of 'date' (%q) is not a valid date: %s",
+				req.PostForm.Get("date"), err),
+				http.StatusBadRequest)
+			return
+		}
+	}
+
 	entry := Entry{
-		Date: time.Now().Round(time.Millisecond),
+		Date: date,
 		Type: req.PostForm.Get("type"),
 		Note: req.PostForm.Get("note"),
 	}
@@ -111,7 +122,7 @@ func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 	for key, vals := range req.PostForm {
 		// ignore "standard" fields
 		switch key {
-		case "type", "note", "value":
+		case "date", "type", "note", "value":
 			continue
 		}
 
