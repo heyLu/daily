@@ -11,11 +11,11 @@ import (
 )
 
 type Entry struct {
-	Date  time.Time
-	Type  string
-	Note  string
-	Value float64
-	Data  map[string]interface{}
+	Date  time.Time              `json:"date"`
+	Type  string                 `json:"type"`
+	Note  string                 `json:"note,omitempty"`
+	Value float64                `json:"value"`
+	Data  map[string]interface{} `json:"data,omitempty"`
 }
 
 func main() {
@@ -44,7 +44,7 @@ func saveEntry(w http.ResponseWriter, req *http.Request) {
 	}
 
 	entry := Entry{
-		Date: time.Now(),
+		Date: time.Now().Round(time.Millisecond),
 		Type: req.PostForm.Get("type"),
 		Note: req.PostForm.Get("note"),
 	}
@@ -86,13 +86,20 @@ func saveEntry(w http.ResponseWriter, req *http.Request) {
 		entry.Data = additionalData
 	}
 
-	fmt.Fprintf(w, "%#v\n", entry)
+	data, err := json.MarshalIndent(entry, "", "  ")
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	w.Write(data)
 }
 
 func renderMoodInput(w http.ResponseWriter, req *http.Request) {
 	tmpl := template.Must(template.New("").Parse(`<!doctype html>
 <html>
 <head>
+	<title>mood (daily)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 body {
