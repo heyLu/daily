@@ -84,9 +84,8 @@ func generateID() (string, error) {
 
 func (r *repository) Get(ctx context.Context, id string) (*Entry, error) {
 	var entry Entry
-	var rawData []byte
 	row := r.db.QueryRowContext(ctx, "SELECT id, date, type, note, value, data FROM entries WHERE id = ?", id)
-	err := row.Scan(&entry.ID, &entry.Date, &entry.Type, &entry.Note, &entry.Value, &rawData)
+	err := scanEntry(row, &entry)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// not found
@@ -95,15 +94,29 @@ func (r *repository) Get(ctx context.Context, id string) (*Entry, error) {
 
 		return nil, fmt.Errorf("could not get entry with id %q: %s", id, err)
 	}
+	return &entry, nil
+}
+
+// scanner abstracts Scan() over both sql.Row and sql.Rows.
+type scanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanEntry(scanner scanner, entry *Entry) error {
+	var rawData []byte
+	err := scanner.Scan(&entry.ID, &entry.Date, &entry.Type, &entry.Note, &entry.Value, &rawData)
+	if err != nil {
+		return err
+	}
 
 	if len(rawData) > 0 {
 		var data map[string]interface{}
 		err = json.Unmarshal(rawData, &data)
 		if err != nil {
-			return nil, fmt.Errorf("additional data %q was invalid: %s", string(rawData), err)
+			return fmt.Errorf("additional data %q was invalid: %s", string(rawData), err)
 		}
 		entry.Data = data
 	}
+	return nil
 
-	return &entry, nil
 }
