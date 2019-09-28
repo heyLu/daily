@@ -20,12 +20,18 @@ type Entry struct {
 }
 
 func main() {
+	dbName := "./test.db"
+	repo, err := NewRepository(dbName)
+	if err != nil {
+		log.Fatalf("Failed to open database %q: %s", dbName, err)
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case http.MethodGet:
 			renderMoodInput(w, req)
 		case http.MethodPost:
-			saveEntry(w, req)
+			saveEntry(repo, w, req)
 		default:
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
@@ -36,7 +42,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func saveEntry(w http.ResponseWriter, req *http.Request) {
+func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -86,6 +92,15 @@ func saveEntry(w http.ResponseWriter, req *http.Request) {
 	if len(additionalData) >= 1 {
 		entry.Data = additionalData
 	}
+
+	id, err := repo.Create(req.Context(), entry)
+	if err != nil {
+		log.Printf("Could not create entry: %s", err)
+		fmt.Fprintf(w, "Could not create new entry: %s", err)
+		return
+	}
+
+	entry.ID = id
 
 	data, err := json.MarshalIndent(entry, "", "  ")
 	if err != nil {

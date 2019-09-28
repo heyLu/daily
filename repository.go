@@ -40,7 +40,7 @@ func (r *repository) Create(ctx context.Context, entry Entry) (id string, err er
 	}
 
 	_, err = r.db.ExecContext(ctx, "INSERT INTO entries (id, date, type, note, value, data) VALUES (?, ?, ?, ?, ?, ?)",
-		entry.ID, entry.Date, entry.Type, entry.Note, entry.Value, dataJSON)
+		id, entry.Date, entry.Type, entry.Note, entry.Value, dataJSON)
 	if err != nil {
 		return "", fmt.Errorf("could not store entry: %s", err)
 	}
