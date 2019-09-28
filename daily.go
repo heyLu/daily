@@ -20,6 +20,8 @@ type Entry struct {
 	Data  map[string]interface{} `json:"data,omitempty"`
 }
 
+type Entries []Entry
+
 var config struct {
 	addr   string
 	dbName string
@@ -70,9 +72,11 @@ func renderEntries(repo Repository, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	enc.Encode(entries)
+	err = entries.Render(w, req.Header.Get("Content-Type"))
+	if err != nil {
+		log.Printf("Could not render entries: %s", err)
+		fmt.Fprintf(w, "\nCould not render entries: %s\n", err)
+	}
 }
 
 func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Request) {
@@ -169,12 +173,11 @@ func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 
 	entry.ID = id
 
-	data, err := json.MarshalIndent(entry, "", "  ")
+	err = entry.Render(w, req.Header.Get("Content-Type"))
 	if err != nil {
-		fmt.Fprintln(w, err)
-		return
+		log.Printf("Could not render entry: %s", err)
+		fmt.Fprintf(w, "\nCould not render entry: %s\n", err)
 	}
-	w.Write(data)
 }
 
 func renderMoodInput(w http.ResponseWriter, req *http.Request) {

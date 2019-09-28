@@ -17,7 +17,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, entry Entry) (id string, err error)
 	Get(ctx context.Context, id string) (*Entry, error)
-	FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) ([]Entry, error)
+	FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) (Entries, error)
 }
 
 type order int
@@ -140,7 +140,7 @@ func scanEntry(scanner scanner, entry *Entry) error {
 	return nil
 }
 
-func (r *repository) FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) ([]Entry, error) {
+func (r *repository) FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) (Entries, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT id, date, type, note, value, data
 	                          FROM entries
 				 WHERE date >= ?
