@@ -17,7 +17,7 @@ func TestCreateEntry(t *testing.T) {
 		Type: "test",
 		Note: "first ever entry!! 🎉",
 	}
-	id, err := repo.Create(context.Background(), entry)
+	id, err := repo.Create(context.Background(), &entry)
 	if err != nil {
 		t.Fatalf("could not create entry: %s", err)
 	}

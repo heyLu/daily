@@ -15,7 +15,7 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, entry Entry) (id string, err error)
+	Create(ctx context.Context, entry *Entry) (id string, err error)
 	Get(ctx context.Context, id string) (*Entry, error)
 	FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) (Entries, error)
 }
@@ -73,7 +73,7 @@ type repository struct {
 	db *sql.DB
 }
 
-func (r *repository) Create(ctx context.Context, entry Entry) (id string, err error) {
+func (r *repository) Create(ctx context.Context, entry *Entry) (id string, err error) {
 	id, err = generateID()
 	if err != nil {
 		return "", fmt.Errorf("could not generate id: %s", err)

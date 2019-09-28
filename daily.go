@@ -103,25 +103,45 @@ func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Re
 }
 
 func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
+	entry, err := FromPostForm(req)
+	if err != nil {
+		log.Printf("Could not parse entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not parse entry: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	id, err := repo.Create(req.Context(), entry)
+	if err != nil {
+		log.Printf("Could not create entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not create new entry: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	entry.ID = id
+
+	err = entry.Render(w, req.Header.Get("Content-Type"))
+	if err != nil {
+		log.Printf("Could not render entry: %s", err)
+		fmt.Fprintf(w, "\nCould not render entry: %s\n", err)
+	}
+}
+
+func FromPostForm(req *http.Request) (*Entry, error) {
 	err := req.ParseForm()
 	if err != nil {
-		log.Println(err)
-		fmt.Fprintln(w, err)
-		return
+		return nil, fmt.Errorf("invalid form: %s", err)
 	}
 
 	date := time.Now().UTC().Round(time.Millisecond)
 	if len(req.PostForm.Get("date")) > 0 {
 		date, err = time.Parse(time.RFC3339, req.PostForm.Get("date"))
 		if err != nil {
-			http.Error(w, fmt.Sprintf("value of 'date' (%q) is not a valid date: %s",
-				req.PostForm.Get("date"), err),
-				http.StatusBadRequest)
-			return
+			return nil, fmt.Errorf("value of 'date' (%q) is not a valid date: %s",
+				req.PostForm.Get("date"), err)
 		}
 	}
 
-	entry := Entry{
+	entry := &Entry{
 		Date: date,
 		Type: req.PostForm.Get("type"),
 		Note: req.PostForm.Get("note"),
@@ -130,8 +150,7 @@ func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 	if val, ok := req.PostForm["value"]; ok && len(val) >= 1 {
 		v, err := strconv.ParseFloat(val[0], 64)
 		if err != nil {
-			fmt.Fprintf(w, "value %q of 'value' is not a number: %s\n", val[0], err)
-			return
+			return nil, fmt.Errorf("value %q of 'value' is not a number: %s", val[0], err)
 		}
 		entry.Value = v
 	}
@@ -164,20 +183,7 @@ func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 		entry.Data = additionalData
 	}
 
-	id, err := repo.Create(req.Context(), entry)
-	if err != nil {
-		log.Printf("Could not create entry: %s", err)
-		fmt.Fprintf(w, "Could not create new entry: %s", err)
-		return
-	}
-
-	entry.ID = id
-
-	err = entry.Render(w, req.Header.Get("Content-Type"))
-	if err != nil {
-		log.Printf("Could not render entry: %s", err)
-		fmt.Fprintf(w, "\nCould not render entry: %s\n", err)
-	}
+	return entry, nil
 }
 
 func renderMoodInput(w http.ResponseWriter, req *http.Request) {
