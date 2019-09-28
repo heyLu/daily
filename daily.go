@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -19,11 +20,20 @@ type Entry struct {
 	Data  map[string]interface{} `json:"data,omitempty"`
 }
 
+var config struct {
+	addr   string
+	dbName string
+}
+
 func main() {
-	dbName := "./test.db"
-	repo, err := NewRepository(dbName)
+	flag.StringVar(&config.addr, "addr", "localhost:11111", "Address to listen on")
+	flag.StringVar(&config.dbName, "db", "./test.db", "Path to the database to use")
+	flag.Parse()
+
+	log.Printf("Opening database %q", config.dbName)
+	repo, err := NewRepository(config.dbName, "./schema-init.sql")
 	if err != nil {
-		log.Fatalf("Failed to open database %q: %s", dbName, err)
+		log.Fatalf("Failed to open database %q: %s", config.dbName, err)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -47,9 +57,8 @@ func main() {
 		}
 	})
 
-	addr := "localhost:11111"
-	log.Printf("Listening on http://%s", addr)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	log.Printf("Listening on http://%s", config.addr)
+	log.Fatal(http.ListenAndServe(config.addr, nil))
 }
 
 func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Request) {

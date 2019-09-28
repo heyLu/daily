@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"io/ioutil"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -16,13 +18,35 @@ type Repository interface {
 	Get(ctx context.Context, id string) (*Entry, error)
 }
 
-func NewRepository(dbFileName string) (Repository, error) {
+func NewRepository(dbFileName string, schemaFileName string) (Repository, error) {
 	db, err := sql.Open("sqlite3", dbFileName)
 	if err != nil {
 		return nil, fmt.Errorf("could not open db in %q: %s", dbFileName, err)
 	}
 
+	err = initSchema(context.Background(), db, schemaFileName)
+	if err != nil {
+		return nil, fmt.Errorf("could not initialize schema: %s", err)
+	}
+
 	return &repository{db: db}, nil
+}
+
+func initSchema(ctx context.Context, db *sql.DB, schemaFileName string) error {
+	schemaSQL, err := ioutil.ReadFile(schemaFileName)
+	if err != nil {
+		return fmt.Errorf("could not read schema sql from %q: %s", schemaFileName, err)
+	}
+
+	statements := strings.Split(string(schemaSQL), ";")
+	for _, stmt := range statements {
+		_, err := db.ExecContext(ctx, stmt)
+		if err != nil {
+			return fmt.Errorf("could not execute %q: %s", stmt, err)
+		}
+	}
+
+	return nil
 }
 
 type repository struct {
@@ -57,7 +81,6 @@ func generateID() (string, error) {
 	}
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
-
 
 func (r *repository) Get(ctx context.Context, id string) (*Entry, error) {
 	var entry Entry
