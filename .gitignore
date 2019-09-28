@@ -1,5 +1,6 @@
 /daily
 *.db
+*.gz
 
 # editor files
 *.swp
