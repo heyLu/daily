@@ -13,6 +13,7 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, entry Entry) (id string, err error)
+	Get(ctx context.Context, id string) (*Entry, error)
 }
 
 func NewRepository(dbFileName string) (Repository, error) {
@@ -55,4 +56,31 @@ func generateID() (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(buf), nil
+}
+
+
+func (r *repository) Get(ctx context.Context, id string) (*Entry, error) {
+	var entry Entry
+	var rawData []byte
+	row := r.db.QueryRowContext(ctx, "SELECT id, date, type, note, value, data FROM entries WHERE id = ?", id)
+	err := row.Scan(&entry.ID, &entry.Date, &entry.Type, &entry.Note, &entry.Value, &rawData)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// not found
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("could not get entry with id %q: %s", id, err)
+	}
+
+	if len(rawData) > 0 {
+		var data map[string]interface{}
+		err = json.Unmarshal(rawData, &data)
+		if err != nil {
+			return nil, fmt.Errorf("additional data %q was invalid: %s", string(rawData), err)
+		}
+		entry.Data = data
+	}
+
+	return &entry, nil
 }

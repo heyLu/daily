@@ -27,6 +27,16 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/":
+			http.Error(w, "not implemented", http.StatusNotImplemented)
+		default:
+			id := req.URL.Path[1:]
+			renderEntry(repo, id, w, req)
+		}
+	})
+
+	http.HandleFunc("/new", func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case http.MethodGet:
 			renderMoodInput(w, req)
@@ -40,6 +50,29 @@ func main() {
 	addr := "localhost:11111"
 	log.Printf("Listening on http://%s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Request) {
+	entry, err := repo.Get(req.Context(), id)
+	if err != nil {
+		log.Printf("Could not get entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not get entry: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	if entry == nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	entryJSON, err := json.MarshalIndent(entry, "", "  ")
+	if err != nil {
+		log.Printf("Could not serialize entry: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(entryJSON)
 }
 
 func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
@@ -153,7 +186,7 @@ input[type=submit] {
 		<h1>More stuff</h1>
 		<p>Let's try things... ^^</p>
 
-		<form method="POST" action="/">
+		<form method="POST" action="/new">
 			<input name="type" value="mood" hidden />
 
 			<div class="field">
