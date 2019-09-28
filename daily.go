@@ -39,7 +39,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/":
-			http.Error(w, "not implemented", http.StatusNotImplemented)
+			renderEntries(repo, w, req)
 		default:
 			id := req.URL.Path[1:]
 			renderEntry(repo, id, w, req)
@@ -59,6 +59,20 @@ func main() {
 
 	log.Printf("Listening on http://%s", config.addr)
 	log.Fatal(http.ListenAndServe(config.addr, nil))
+}
+
+func renderEntries(repo Repository, w http.ResponseWriter, req *http.Request) {
+	now := time.Now().UTC()
+	entries, err := repo.FindBetween(req.Context(), now.AddDate(0, 0, -30), now, Descending)
+	if err != nil {
+		log.Printf("Could not list entries: %s", err)
+		http.Error(w, fmt.Sprintf("could not list entries: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(entries)
 }
 
 func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Request) {

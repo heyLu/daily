@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 	"strings"
 	"io/ioutil"
 
@@ -16,6 +17,25 @@ import (
 type Repository interface {
 	Create(ctx context.Context, entry Entry) (id string, err error)
 	Get(ctx context.Context, id string) (*Entry, error)
+	FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) ([]Entry, error)
+}
+
+type order int
+
+const (
+	Ascending  order = iota
+	Descending
+)
+
+func (o order) String() string {
+	switch o {
+	case Ascending:
+		return "ASC"
+	case Descending:
+		return "DESC"
+	default:
+		panic("invalid order value")
+	}
 }
 
 func NewRepository(dbFileName string, schemaFileName string) (Repository, error) {
@@ -118,5 +138,31 @@ func scanEntry(scanner scanner, entry *Entry) error {
 		entry.Data = data
 	}
 	return nil
+}
 
+func (r *repository) FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) ([]Entry, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT id, date, type, note, value, data
+	                          FROM entries
+				 WHERE date >= ?
+				   AND date <= ?
+				ORDER BY date ` + order.String(), dateStart, dateEnd)
+	if err != nil {
+		return nil, fmt.Errorf("could not execute query: %s", err)
+	}
+	defer rows.Close()
+
+	entries := make([]Entry, 0, 100)
+	for rows.Next() {
+		var entry Entry
+		err = scanEntry(rows, &entry)
+		if err != nil {
+			return nil, fmt.Errorf("could not scan entry: %s", err)
+		}
+		entries = append(entries, entry)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("could not finish query: %s", err)
+	}
+
+	return entries, nil
 }
