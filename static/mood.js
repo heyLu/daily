@@ -1,4 +1,4 @@
-let moodInput = document.querySelector("#mood");
+let moodInput = document.querySelector("#entry-value");
 let moodGradient = document.querySelector("#mood-gradient");
 
 moodGradient.classList.remove("hidden");
