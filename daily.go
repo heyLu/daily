@@ -215,8 +215,8 @@ body {
 	margin: 1em;
 }
 
-input[type=submit] {
-	margin-top: 1em;
+.field {
+	margin-bottom: 0.5em;
 }
 </style>
 
@@ -226,8 +226,7 @@ input[type=submit] {
 	<div id="mood-gradient" class="hidden"></div>
 
 	<section id="content">
-		<h1>More stuff</h1>
-		<p>Let's try things... ^^</p>
+		<h1>Create entry</h1>
 
 		<form method="POST" action="/new">
 			<input name="type" value="mood" hidden />
@@ -242,6 +241,13 @@ input[type=submit] {
 				<input name="note" type="text" />
 			</div>
 
+			<h2>Additional data</h2>
+
+			<div class="field">
+				<input id="field-name" type="text" placeholder="field name" />
+				<input id="field-value" type="text" placeholder="field value" />
+			</div>
+
 			<input type="submit" value="Save" />
 		</form>
 	</section>
@@ -254,6 +260,14 @@ input[type=submit] {
 
 		moodGradient.addEventListener("click", function(ev) {
 			moodInput.value = ev.clientX / document.body.clientWidth;
+		});
+
+		let fieldName = document.querySelector("#field-name");
+		let fieldValue = document.querySelector("#field-value");
+
+		fieldName.addEventListener("change", function(ev) {
+			fieldValue.name = fieldName.value;
+			console.log(fieldValue.name, "=", fieldValue.value);
 		});
 	</script>
 </body>
