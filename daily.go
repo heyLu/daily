@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -51,13 +50,20 @@ func main() {
 	http.HandleFunc("/new", func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case http.MethodGet:
-			renderMoodInput(w, req)
+			RenderInput(w, req, "")
 		case http.MethodPost:
 			saveEntry(repo, w, req)
 		default:
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
+
+	http.HandleFunc("/new/", func(w http.ResponseWriter, req *http.Request) {
+		typeName := req.URL.Path[5:]
+		RenderInput(w, req, typeName)
+	})
+
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	log.Printf("Listening on http://%s", config.addr)
 	log.Fatal(http.ListenAndServe(config.addr, nil))
@@ -186,119 +192,3 @@ func FromPostForm(req *http.Request) (*Entry, error) {
 	return entry, nil
 }
 
-func renderMoodInput(w http.ResponseWriter, req *http.Request) {
-	tmpl := template.Must(template.New("").Parse(`<!doctype html>
-<html>
-<head>
-	<title>mood (daily)</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-
-<style>
-body {
-	margin: 0;
-
-	font-family: monospace;
-}
-
-.hidden {
-	visibility: hidden;
-}
-
-#mood-gradient {
-	width: 100%;
-	height: 100vh;
-	background-image: linear-gradient(to right, red, orange, yellow, rgb(200, 255, 0) 40%, green, blue);
-	opacity: 0.8;
-}
-
-#content {
-	margin: 1em;
-}
-
-.field {
-	margin-bottom: 0.5em;
-}
-</style>
-
-</head>
-
-<body>
-	<div id="mood-gradient" class="hidden"></div>
-
-	<section id="content">
-		<h1>Create entry</h1>
-
-		<form method="POST" action="/new">
-			<input name="type" value="mood" hidden />
-
-			<div class="field">
-				<label for="value">Mood</label>
-				<input id="mood" name="value" type="range" min="0" max="1" step="0.01" />
-			</div>
-
-			<div class="field">
-				<label for="Note">Note</label>
-				<input name="note" type="text" />
-			</div>
-
-			<h2>Additional data</h2>
-
-			<div id="additional-fields"></div>
-
-			<div class="field">
-				<button id="add-field">Add field</button>
-			</div>
-
-			<input type="submit" value="Save" />
-		</form>
-	</section>
-
-	<script>
-		let moodInput = document.querySelector("#mood");
-		let moodGradient = document.querySelector("#mood-gradient");
-
-		moodGradient.classList.remove("hidden");
-
-		moodGradient.addEventListener("click", function(ev) {
-			moodInput.value = ev.clientX / document.body.clientWidth;
-		});
-	</script>
-
-	<script>
-		let additionalFields = document.querySelector("#additional-fields");
-		let addField = document.querySelector("#add-field");
-		addField.addEventListener("click", function(ev) {
-			let fieldContainer = document.createElement("div");
-			fieldContainer.classList.add("field");
-
-			let fieldName = document.createElement("input");
-			fieldName.type = "text";
-			fieldName.placeholder = "field name";
-			fieldContainer.appendChild(fieldName);
-
-			let fieldValue = document.createElement("input");
-			fieldValue.type = "text";
-			fieldValue.placeholder = "field value";
-			fieldContainer.appendChild(fieldValue);
-
-			fieldName.addEventListener("change", function(ev) {
-				fieldValue.name = fieldName.value;
-			});
-
-			additionalFields.appendChild(fieldContainer);
-
-			fieldName.focus();
-
-			// prevent form submit
-			ev.preventDefault();
-		});
-	</script>
-</body>
-</html>
-`))
-	err := tmpl.Execute(w, map[string]interface{}{})
-	if err != nil {
-		log.Println(err)
-		fmt.Fprint(w, err)
-	}
-}

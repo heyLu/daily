@@ -1,0 +1,17 @@
+body {
+	margin: 0;
+
+	font-family: monospace;
+}
+
+.hidden {
+	visibility: hidden;
+}
+
+#content {
+	margin: 1em;
+}
+
+.field {
+	margin-bottom: 0.5em;
+}
