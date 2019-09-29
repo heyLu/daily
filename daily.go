@@ -243,9 +243,10 @@ body {
 
 			<h2>Additional data</h2>
 
+			<div id="additional-fields"></div>
+
 			<div class="field">
-				<input id="field-name" type="text" placeholder="field name" />
-				<input id="field-value" type="text" placeholder="field value" />
+				<button id="add-field">Add field</button>
 			</div>
 
 			<input type="submit" value="Save" />
@@ -261,13 +262,35 @@ body {
 		moodGradient.addEventListener("click", function(ev) {
 			moodInput.value = ev.clientX / document.body.clientWidth;
 		});
+	</script>
 
-		let fieldName = document.querySelector("#field-name");
-		let fieldValue = document.querySelector("#field-value");
+	<script>
+		let additionalFields = document.querySelector("#additional-fields");
+		let addField = document.querySelector("#add-field");
+		addField.addEventListener("click", function(ev) {
+			let fieldContainer = document.createElement("div");
+			fieldContainer.classList.add("field");
 
-		fieldName.addEventListener("change", function(ev) {
-			fieldValue.name = fieldName.value;
-			console.log(fieldValue.name, "=", fieldValue.value);
+			let fieldName = document.createElement("input");
+			fieldName.type = "text";
+			fieldName.placeholder = "field name";
+			fieldContainer.appendChild(fieldName);
+
+			let fieldValue = document.createElement("input");
+			fieldValue.type = "text";
+			fieldValue.placeholder = "field value";
+			fieldContainer.appendChild(fieldValue);
+
+			fieldName.addEventListener("change", function(ev) {
+				fieldValue.name = fieldName.value;
+			});
+
+			additionalFields.appendChild(fieldContainer);
+
+			fieldName.focus();
+
+			// prevent form submit
+			ev.preventDefault();
 		});
 	</script>
 </body>
