@@ -52,7 +52,7 @@ func main() {
 		case http.MethodGet:
 			RenderInput(w, req, "")
 		case http.MethodPost:
-			saveEntry(repo, w, req)
+			createEntry(repo, w, req)
 		default:
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
@@ -108,7 +108,7 @@ func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Re
 	w.Write(entryJSON)
 }
 
-func saveEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
+func createEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 	entry, err := FromPostForm(req)
 	if err != nil {
 		log.Printf("Could not parse entry: %s", err)
