@@ -10,7 +10,7 @@ import (
 func RenderInput(w http.ResponseWriter, req *http.Request, typeName string) {
 	data := map[string]interface{}{
 		"Title": "New entry - daily",
-		"Type": typeName,
+		"Type":  typeName,
 	}
 	tmpl := tmplInputDefault
 
@@ -32,9 +32,13 @@ var inputTemplateFor = map[string]templateDefinition{
 	"mood": templateDefinition{
 		Template: tmplInputMood,
 		Data: map[string]interface{}{
-			"Title": "mood - daily",
+			"Title":      "mood - daily",
 			"Stylesheet": "mood.css",
 			"ValueLabel": "Mood",
+			"ValueType":  "range",
+			"ValueMin":   "0",
+			"ValueMax":   "1",
+			"ValueStep":  "0.01",
 		},
 	},
 }
@@ -68,7 +72,10 @@ var tmplBase = template.Must(template.New("base").Parse(`{{ define "input-form" 
 			<input name="type" value="{{ .Type }}" placeholder="type" required {{ if .Type }}hidden{{ end }} />
 			<div class="field">
 				<label for="value">{{ or .ValueLabel "Value" }}</label>
-				<input id="entry-value" name="value" type="range" min="0" max="1" step="0.01" />
+				<input id="entry-value" name="value" type="{{ or .ValueType "number" }}" value="{{ or .ValueDefault "0" }}"
+					{{ if .ValueMin }}min="{{ .ValueMin }}" {{ end -}}
+					{{ if .ValueMax }}max="{{ .ValueMax }}" {{ end }}
+					step="{{ or .ValueStep "any" }}" />
 			</div>
 
 			<div class="field">
