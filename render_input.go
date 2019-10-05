@@ -64,7 +64,26 @@ var tmplInputDefault = template.Must(tmplBase.New("input-default").Parse(`
 {{ template "html-end" }}
 `))
 
-var tmplBase = template.Must(template.New("base").Parse(`{{ define "input-form" }}
+func RenderEdit(w http.ResponseWriter, req *http.Request, entry *Entry) {
+	data := map[string]interface{}{
+		"Title": "Edit entry - daily",
+		"Entry": entry,
+	}
+
+	err := tmplEditDefault.Execute(w, data)
+	if err != nil {
+		log.Println(err)
+		fmt.Fprint(w, err)
+	}
+}
+
+var tmplEditDefault = template.Must(tmplBase.New("edit-default").Parse(`
+{{- template "html-start" . }}
+	{{ template "edit-form" . }}
+{{ template "html-end" }}
+`))
+
+var tmplBase = template.Must(template.New("base").Funcs(tmplFuncs).Parse(`{{ define "input-form" }}
 	<section id="content">
 		<h1>Create entry</h1>
 
@@ -95,6 +114,54 @@ var tmplBase = template.Must(template.New("base").Parse(`{{ define "input-form" 
 		</form>
 	</section>
 {{ end }}
+{{ define "edit-form" }}
+	<section id="content">
+		<h1>Edit entry</h1>
+
+		<form method="POST" action="/edit/{{ .Entry.ID }}">
+			<div class="field">
+				<input name="type" value="{{ .Entry.Type }}" disabled />
+			</div>
+
+			<div class="field">
+				<label for="value">Value</label>
+				<input id="entry-value" name="value" type="number" value="{{ .Entry.Value }}" />
+			</div>
+
+			<div class="field">
+				<label for="note">Note</label>
+				<input name="note" type="text" value="{{ .Entry.Note }}" />
+			</div>
+
+			<h2>Additional data</h2>
+
+			<div id="additional-fields">
+			{{ range $key, $value := .Entry.Data }}
+				{{ if (isList $value) }}
+					{{ range $singleValue := $value }}
+					<div class="field">
+						<input class="field-key" type="text" value="{{ $key }}" />
+						<input class="field-value" type="text" name="{{ $key }}" value="{{ $singleValue }}" />
+					</div>
+					{{ end }}
+				{{ else }}
+				<div class="field">
+					<input class="field-key" type="text" value="{{ $key }}" />
+					<input class="field-value" type="text" name="{{ $key }}" value="{{ $value }}" />
+				</div>
+				{{ end }}
+			{{ end }}
+			</div>
+
+			<div class="field">
+				<button id="add-field">Add field</button>
+			</div>
+
+			<input type="submit" value="Save" />
+		</form>
+	</section>
+{{ end }}
+
 {{ define "html-start" }}
 <!doctype html>
 <html>
@@ -119,3 +186,14 @@ var tmplBase = template.Must(template.New("base").Parse(`{{ define "input-form" 
 </html>
 {{ end }}
 `))
+
+var tmplFuncs = template.FuncMap{
+	"isList": func(val interface{}) bool {
+		switch val.(type) {
+		case []interface{}:
+			return true
+		default:
+			return false
+		}
+	},
+}

@@ -63,6 +63,18 @@ func main() {
 		RenderInput(w, req, typeName)
 	})
 
+	http.HandleFunc("/edit/", func(w http.ResponseWriter, req *http.Request) {
+		id := req.URL.Path[6:]
+		switch req.Method {
+		case http.MethodGet:
+			renderEditEntry(repo, w, req, id)
+		case http.MethodPost:
+			editEntry(repo, w, req, id)
+		default:
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		}
+	})
+
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	log.Printf("Listening on http://%s", config.addr)
@@ -130,6 +142,57 @@ func createEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 		log.Printf("Could not render entry: %s", err)
 		fmt.Fprintf(w, "\nCould not render entry: %s\n", err)
 	}
+}
+
+func renderEditEntry(repo Repository, w http.ResponseWriter, req *http.Request, id string) {
+	entry, err := repo.Get(req.Context(), id)
+	if err != nil {
+		log.Printf("Could not get entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not get entry: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	if entry == nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	RenderEdit(w, req, entry)
+}
+
+func editEntry(repo Repository, w http.ResponseWriter, req *http.Request, id string) {
+	entry, err := repo.Get(req.Context(), id)
+	if err != nil {
+		log.Printf("Could not get entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not get entry: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	if entry == nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	editedEntry, err := FromPostForm(req)
+	if err != nil {
+		log.Printf("Could not parse entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not parse entry: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	editedEntry.ID = entry.ID
+	editedEntry.Date = entry.Date
+	editedEntry.Type = entry.Type
+
+	err = repo.Update(req.Context(), editedEntry)
+	if err != nil {
+		log.Printf("Could not update entry: %s", err)
+		http.Error(w, fmt.Sprintf("Could not update entry: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Location", "/" + entry.ID)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func FromPostForm(req *http.Request) (*Entry, error) {

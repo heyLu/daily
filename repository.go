@@ -17,6 +17,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, entry *Entry) (id string, err error)
 	Get(ctx context.Context, id string) (*Entry, error)
+	Update(ctx context.Context, entry *Entry) error
 	FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) (Entries, error)
 }
 
@@ -115,6 +116,29 @@ func (r *repository) Get(ctx context.Context, id string) (*Entry, error) {
 		return nil, fmt.Errorf("could not get entry with id %q: %s", id, err)
 	}
 	return &entry, nil
+}
+
+func (r *repository) Update(ctx context.Context, entry *Entry) error {
+	dataJSON, err := json.Marshal(entry.Data)
+	if err != nil {
+		return fmt.Errorf("could not serialize additional data: %s", err)
+	}
+
+	res, err := r.db.ExecContext(ctx, "UPDATE entries SET type = ?, note = ?, value = ?, data = ? WHERE id = ?",
+		entry.Type, entry.Note, entry.Value, dataJSON, entry.ID)
+	if err != nil {
+		return fmt.Errorf("could not update entry: %s", err)
+	}
+
+	numRows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("could not get affected rows: %s", err)
+	}
+	if numRows != 1 {
+		return fmt.Errorf("expected to change 1 row, but changed %d rows", numRows)
+	}
+
+	return nil
 }
 
 // scanner abstracts Scan() over both sql.Row and sql.Rows.
