@@ -1,4 +1,4 @@
-let additionalFields = document.querySelector("#additional-fields");
+let additionalFieldsContainer = document.querySelector("#additional-fields");
 let addField = document.querySelector("#add-field");
 
 addField.addEventListener("click", function(ev) {
@@ -15,14 +15,25 @@ addField.addEventListener("click", function(ev) {
 	fieldValue.placeholder = "field value";
 	fieldContainer.appendChild(fieldValue);
 
-	fieldName.addEventListener("change", function(ev) {
+	fieldName.addEventListener("input", function(ev) {
 		fieldValue.name = fieldName.value;
 	});
 
-	additionalFields.appendChild(fieldContainer);
+	additionalFieldsContainer.appendChild(fieldContainer);
 
 	fieldName.focus();
 
 	// prevent form submit
 	ev.preventDefault();
 });
+
+// connect existing field keys to field values
+let additionalFields = additionalFieldsContainer.querySelectorAll(".field");
+for (let i = 0; i < additionalFields.length; i++) {
+	let fieldName = additionalFields[i].querySelector(".field-key");
+	let fieldValue = additionalFields[i].querySelector(".field-value");
+
+	fieldName.addEventListener("input", function(ev) {
+		fieldValue.name = fieldName.value;
+	});
+}
