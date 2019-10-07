@@ -6,6 +6,7 @@
 - [ ] edit entries
 - [ ] render entries as HTML
 - [ ] custom entry `type` templates
+- [ ] SQL query interface
 
 ## Building
 
