@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -110,14 +112,15 @@ func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	entryJSON, err := json.MarshalIndent(entry, "", "  ")
+	buf := new(bytes.Buffer)
+	err = entry.Render(buf, req.Header.Get("Accept"))
 	if err != nil {
-		log.Printf("Could not serialize entry: %s", err)
+		log.Printf("Could not render entry: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	w.Write(entryJSON)
+	io.Copy(w, buf)
 }
 
 func renderQuery(repo Repository, w http.ResponseWriter, req *http.Request) {

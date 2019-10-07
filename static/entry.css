@@ -1,0 +1,8 @@
+.entry header {
+	display: flex;
+	align-items: baseline;
+}
+
+.entry header * {
+	padding-right: 0.5em;
+}
