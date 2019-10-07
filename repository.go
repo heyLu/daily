@@ -18,6 +18,7 @@ type Repository interface {
 	Create(ctx context.Context, entry *Entry) (id string, err error)
 	Get(ctx context.Context, id string) (*Entry, error)
 	Update(ctx context.Context, entry *Entry) error
+	Query(ctx context.Context, query string) (Entries, error)
 	FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) (Entries, error)
 }
 
@@ -162,6 +163,30 @@ func scanEntry(scanner scanner, entry *Entry) error {
 		entry.Data = data
 	}
 	return nil
+}
+
+func (r *repository) Query(ctx context.Context, query string) (Entries, error) {
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("could not execute query: %s", err)
+	}
+	defer rows.Close()
+
+	entries := make([]Entry, 0, 100)
+	for rows.Next() {
+		var entry Entry
+		err = scanEntry(rows, &entry)
+		if err != nil {
+			return nil, fmt.Errorf("could not scan entry: %s", err)
+		}
+		entries = append(entries, entry)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("could not finish query: %s", err)
+	}
+
+	return entries, nil
+
 }
 
 func (r *repository) FindBetween(ctx context.Context, dateStart, dateEnd time.Time, order order) (Entries, error) {

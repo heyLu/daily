@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 )
@@ -23,4 +24,10 @@ func (es Entries) RenderJSON(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(es)
+}
+
+func (es Entries) RenderJSONString() (string, error) {
+	buf := new(bytes.Buffer)
+	err := es.RenderJSON(buf)
+	return buf.String(), err
 }

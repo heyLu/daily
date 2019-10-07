@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -51,6 +52,10 @@ func main() {
 
 	router.Methods("GET").Path("/new/{type}").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		RenderInput(w, req, mux.Vars(req)["type"])
+	})
+
+	router.Methods("GET").Path("/query").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		renderQuery(repo, w, req)
 	})
 
 	router.Methods("GET").Path("/{id}").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -114,6 +119,58 @@ func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Re
 
 	w.Write(entryJSON)
 }
+
+func renderQuery(repo Repository, w http.ResponseWriter, req *http.Request) {
+	var entries Entries = nil
+	var err error
+
+	query := req.URL.Query().Get("query")
+	if query != "" {
+		entries, err = repo.Query(req.Context(), query)
+		if err != nil {
+			log.Printf("Could not execute query: %s", err)
+		}
+	}
+
+	err = tmplQuery.Execute(w, map[string]interface{}{
+		"Query": query,
+		"Entries": entries,
+		"Error": err,
+	})
+	if err != nil {
+		log.Printf("Could not execute template: %s", err)
+		fmt.Fprintf(w, "\n%s\n", err)
+	}
+}
+
+var tmplQuery = template.Must(template.New("query").Parse(`<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Query!</title>
+</head>
+
+<body>
+	<form method="GET" action="/query">
+		<div>
+			<textarea name="query" cols="80" rows="10">{{ .Query }}</textarea>
+		</div>
+
+		<input type="submit" value="Search!" />
+	</form>
+
+	{{ if .Error }}
+	<div class="error">
+		<pre>{{ .Error }}</pre>
+	</div>
+	{{ end }}
+
+	<div class="result">
+		<pre>{{ .Entries.RenderJSONString }}</pre>
+	</div>
+</body>
+</html>
+`))
 
 func createEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 	entry, err := FromPostForm(req)
