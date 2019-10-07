@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type Entry struct {
@@ -37,44 +39,37 @@ func main() {
 		log.Fatalf("Failed to open database %q: %s", config.dbName, err)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case "/":
-			renderEntries(repo, w, req)
-		default:
-			id := req.URL.Path[1:]
-			renderEntry(repo, id, w, req)
-		}
+	router := mux.NewRouter()
+
+	router.Methods("GET").Path("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		renderEntries(repo, w, req)
 	})
 
-	http.HandleFunc("/new", func(w http.ResponseWriter, req *http.Request) {
-		switch req.Method {
-		case http.MethodGet:
-			RenderInput(w, req, "")
-		case http.MethodPost:
-			createEntry(repo, w, req)
-		default:
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		}
+	router.Methods("GET").Path("/new").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		RenderInput(w, req, "")
 	})
 
-	http.HandleFunc("/new/", func(w http.ResponseWriter, req *http.Request) {
-		typeName := req.URL.Path[5:]
-		RenderInput(w, req, typeName)
+	router.Methods("GET").Path("/new/{type}").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		RenderInput(w, req, mux.Vars(req)["type"])
 	})
 
-	http.HandleFunc("/edit/", func(w http.ResponseWriter, req *http.Request) {
-		id := req.URL.Path[6:]
-		switch req.Method {
-		case http.MethodGet:
-			renderEditEntry(repo, w, req, id)
-		case http.MethodPost:
-			editEntry(repo, w, req, id)
-		default:
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		}
+	router.Methods("GET").Path("/{id}").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		renderEntry(repo, mux.Vars(req)["id"], w, req)
 	})
 
+	router.Methods("POST").Path("/new").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		createEntry(repo, w, req)
+	})
+
+	router.Methods("POST").Path("/{id}").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		editEntry(repo, w, req, mux.Vars(req)["id"])
+	})
+
+	router.Methods("GET").Path("/{id}/edit").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		renderEditEntry(repo, w, req, mux.Vars(req)["id"])
+	})
+
+	http.Handle("/", router)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	log.Printf("Listening on http://%s", config.addr)
@@ -135,13 +130,8 @@ func createEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	entry.ID = id
-
-	err = entry.Render(w, req.Header.Get("Content-Type"))
-	if err != nil {
-		log.Printf("Could not render entry: %s", err)
-		fmt.Fprintf(w, "\nCould not render entry: %s\n", err)
-	}
+	w.Header().Set("Location", "/" + id)
+	w.WriteHeader(http.StatusFound)
 }
 
 func renderEditEntry(repo Repository, w http.ResponseWriter, req *http.Request, id string) {
@@ -192,7 +182,7 @@ func editEntry(repo Repository, w http.ResponseWriter, req *http.Request, id str
 	}
 
 	w.Header().Set("Location", "/" + entry.ID)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	w.WriteHeader(http.StatusFound)
 }
 
 func FromPostForm(req *http.Request) (*Entry, error) {

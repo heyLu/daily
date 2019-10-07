@@ -118,7 +118,7 @@ var tmplBase = template.Must(template.New("base").Funcs(tmplFuncs).Parse(`{{ def
 	<section id="content">
 		<h1>Edit entry</h1>
 
-		<form method="POST" action="/edit/{{ .Entry.ID }}">
+		<form method="POST" action="/{{ .Entry.ID }}">
 			<div class="field">
 				<input name="type" value="{{ .Entry.Type }}" disabled />
 			</div>
