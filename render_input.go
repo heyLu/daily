@@ -124,8 +124,12 @@ var tmplBase = template.Must(template.New("base").Funcs(tmplFuncs).Parse(`{{ def
 			</div>
 
 			<div class="field">
-				<label for="value">Value</label>
-				<input id="entry-value" name="value" type="number" value="{{ .Entry.Value }}" />
+				<label for="value">{{ or .ValueLabel "Value" }}</label>
+				<input id="entry-value" name="value" type="{{ or .ValueType "number" }}" value="{{ .Entry.Value }}"
+					{{ if .ValueMin }}min="{{ .ValueMin }}" {{ end -}}
+					{{ if .ValueMax }}max="{{ .ValueMax }}" {{ end }}
+					step="{{ or .ValueStep "any" }}" />
+
 			</div>
 
 			<div class="field">
