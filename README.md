@@ -3,7 +3,7 @@
 ## Features
 
 - [x] create new entries
-- [ ] edit entries
+- [x] edit entries
 - [ ] render entries as HTML
 - [ ] custom entry `type` templates
 - [ ] SQL query interface
