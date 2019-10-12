@@ -92,11 +92,16 @@ func renderEntries(repo Repository, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = entries.Render(w, req.Header.Get("Content-Type"))
+	buf := new(bytes.Buffer)
+	err = entries.Render(buf, req.Header.Get("Accept"))
 	if err != nil {
 		log.Printf("Could not render entries: %s", err)
-		fmt.Fprintf(w, "\nCould not render entries: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
+
+	io.Copy(w, buf)
+
 }
 
 func renderEntry(repo Repository, id string, w http.ResponseWriter, req *http.Request) {
