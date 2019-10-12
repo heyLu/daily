@@ -53,11 +53,13 @@ func (e Entry) RenderHTML(w io.Writer) error {
 }
 
 var tmplEntry = template.Must(tmplBase.New("entry").Parse(`{{ template "html-start" . }}
+<a href="/new">/new</a>
+
 <article class="entry">
 	<header>
 		<h1>{{ .Entry.Date }}</h1>
 		<span class="type">{{ .Entry.Type }}</span>
-		<a href="/{{ .Entry.ID }}/edit">edit</a>
+		<a href="/{{ .Entry.ID }}/edit">/edit</a>
 	</header>
 
 	<p>{{ .Entry.Note }}</p>
