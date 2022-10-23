@@ -48,13 +48,12 @@ func (es Entries) RenderJSONString() (string, error) {
 	return buf.String(), err
 }
 
-
 func (es Entries) RenderHTML(w io.Writer) error {
 	for _, e := range es {
 		e.Date = e.Date.Round(time.Second)
 	}
 	return tmplEntries.Execute(w, map[string]interface{}{
-		"Entries": es,
+		"Entries":    es,
 		"Stylesheet": "entry.css",
 	})
 }
@@ -62,7 +61,7 @@ func (es Entries) RenderHTML(w io.Writer) error {
 func (e Entry) RenderHTML(w io.Writer) error {
 	e.Date = e.Date.Round(time.Second)
 	return tmplEntry.Execute(w, map[string]interface{}{
-		"Entry": e,
+		"Entry":      e,
 		"Stylesheet": "entry.css",
 	})
 }

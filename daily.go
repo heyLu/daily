@@ -141,9 +141,9 @@ func renderQuery(repo Repository, w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = tmplQuery.Execute(w, map[string]interface{}{
-		"Query": query,
+		"Query":   query,
 		"Entries": entries,
-		"Error": err,
+		"Error":   err,
 	})
 	if err != nil {
 		log.Printf("Could not execute template: %s", err)
@@ -195,7 +195,7 @@ func createEntry(repo Repository, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", "/" + id)
+	w.Header().Set("Location", "/"+id)
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -246,7 +246,7 @@ func editEntry(repo Repository, w http.ResponseWriter, req *http.Request, id str
 		return
 	}
 
-	w.Header().Set("Location", "/" + entry.ID)
+	w.Header().Set("Location", "/"+entry.ID)
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -309,4 +309,3 @@ func FromPostForm(req *http.Request) (*Entry, error) {
 
 	return entry, nil
 }
-

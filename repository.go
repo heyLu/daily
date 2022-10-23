@@ -7,9 +7,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"time"
-	"strings"
 	"io/ioutil"
+	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -25,7 +25,7 @@ type Repository interface {
 type order int
 
 const (
-	Ascending  order = iota
+	Ascending order = iota
 	Descending
 )
 
@@ -194,7 +194,7 @@ func (r *repository) FindBetween(ctx context.Context, dateStart, dateEnd time.Ti
 	                          FROM entries
 				 WHERE date >= ?
 				   AND date <= ?
-				ORDER BY date ` + order.String(), dateStart, dateEnd)
+				ORDER BY date `+order.String(), dateStart, dateEnd)
 	if err != nil {
 		return nil, fmt.Errorf("could not execute query: %s", err)
 	}
