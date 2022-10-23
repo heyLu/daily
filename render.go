@@ -134,6 +134,7 @@ var tmplEntryBase = template.Must(tmplBase.Funcs(entryFuncs).New("entry-base").P
 `))
 
 var tmplEntry = template.Must(tmplEntryBase.New("entry-single").Parse(`{{ template "html-start" . }}
+<a href="/all">/all</a>
 <a href="/new">/new</a>
 
 {{ template "entry" .Entry }}
@@ -142,6 +143,8 @@ var tmplEntry = template.Must(tmplEntryBase.New("entry-single").Parse(`{{ templa
 `))
 
 var tmplEntries = template.Must(tmplEntryBase.New("entries").Parse(`{{ template "html-start" . }}
+<a href="/new">/new</a>
+
 {{ range .Entries }}
 	{{ template "entry" . }}
 {{ end }}
